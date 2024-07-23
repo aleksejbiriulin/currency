@@ -1,0 +1,29 @@
+# Poetry
+.venv/
+*.toml
+*.lock
+!pyproject.toml
+
+# Python
+__pycache__/
+__init__.py
+*.py[cod]
+*$py.class
+
+# Compiled output
+dist/
+build/
+*.egg-info/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
