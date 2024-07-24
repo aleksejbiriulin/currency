@@ -3,15 +3,17 @@ import aiohttp
 import xml.etree.ElementTree as ET
 import redis
 from aiogram import Bot, Dispatcher, types
-from aiogram.utils import executor
-
-# Настройки бота
-BOT_TOKEN = '6156683874:AAH3_uy_scIQSfcALGsItsI17hkNN9d3YfE'
-REDIS_HOST = 'redis'
-REDIS_PORT = 6379
+# from aiogram.utils import executor
+from aiogram.filters import Command
+from config import *
 
 # Подключение к Redis
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+redis_client = redis.Redis(host=REDIS_HOST, port=int(REDIS_PORT))
+
+# Инициализация бота
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher() 
+
 
 # Функция для получения курсов валют из XML
 async def fetch_currency_rates():
@@ -26,8 +28,10 @@ async def fetch_currency_rates():
         currency_code = currency.find("CharCode").text
         currency_rate = float(currency.find("Value").text.replace(",", "."))
         redis_client.set(f"currency:{currency_code}", currency_rate)
+    print(7)
 
 # Функция для обработки команды /exchange
+@dp.message(Command('/exchange'))
 async def exchange_command(message: types.Message):
     try:
         _, from_currency, to_currency, amount = message.text.split()
@@ -39,7 +43,9 @@ async def exchange_command(message: types.Message):
         await message.reply("Неправильный формат команды. Пример: /exchange USD RUB 10")
 
 # Функция для обработки команды /rates
+@dp.message(Command('/rates'))
 async def rates_command(message: types.Message):
+    print(5)
     rates = ""
     for key in redis_client.keys("currency:*"):
         currency_code = key.decode().split(":")[1]
@@ -47,17 +53,16 @@ async def rates_command(message: types.Message):
         rates += f"{currency_code}: {currency_rate:.4f}\n"
     await message.reply(f"Актуальные курсы валют:\n{rates}")
 
-# Инициализация бота
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
-
-# Регистрация обработчиков команд
-dp.register_message_handler(exchange_command, commands=["exchange"])
-dp.register_message_handler(rates_command, commands=["rates"])
-
-# Запуск получения курсов валют
-async def on_startup(dp):
+    
+async def main() -> None:
+    print(5)
     asyncio.create_task(fetch_currency_rates())
+    print(6)
+    await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
